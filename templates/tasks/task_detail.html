@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block title %}{{ task.title }}{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+  <div class="card-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <h2 class="mb-0">{{ task.title }}</h2>
+        <div>
+            {% if task.user == user or user.is_staff %}
+              <a class="btn btn-sm btn-warning" href="{% url 'task_edit' task.pk %}">Редагувати</a>
+              <a class="btn btn-sm btn-danger" href="{% url 'task_delete' task.pk %}">Видалити</a>
+            {% endif %}
+        </div>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="mb-3 text-muted">
+      <strong>Статус:</strong> {{ task.get_status_display }} |
+      <strong>Пріоритет:</strong> {{ task.get_priority_display }} |
+      <strong>Створено:</strong> {{ task.created_at|date:"d.m.Y H:i" }} |
+      <strong>Автор:</strong> {{ task.user.username }}
+    </div>
+    <p>{{ task.description|linebreaks|default:"Опису немає" }}</p>
+    {% if task.due_date %}<p><strong>Термін виконання:</strong> {{ task.due_date|date:"d.m.Y" }}</p>{% endif %}
+
+    {% if task.image %}
+      <hr>
+      <h5>Зображення</h5>
+      <img src="{{ task.image.url }}" alt="{{ task.title }}" class="img-fluid rounded mb-3" style="max-height: 400px;">
+    {% endif %}
+  </div>
+</div>
+
+
+<h4>Коментарі ({{ comments.count }})</h4>
+<div class="card mb-4">
+    <div class="card-body">
+        
+        <form method="post" action="{% url 'task_detail' task.pk %}" enctype="multipart/form-data" class="mb-3">
+          {% csrf_token %}
+          
+          {% if comment_form.non_field_errors %}
+            <div class="alert alert-danger alert-sm p-2">
+              {{ comment_form.non_field_errors }}
+            </div>
+          {% endif %}
+
+          <div class="mb-2">
+            {{ comment_form.text }}
+          </div>
+          
+          <div class="mb-2">
+            <label for="{{ comment_form.image.id_for_label }}" class="form-label small">Додати зображення</label>
+            {{ comment_form.image }}
+            {% if comment_form.image.errors %}<div class="invalid-feedback d-block">{{ comment_form.image.errors }}</div>{% endif %}
+          </div>
+          
+          <button class="btn btn-primary">Додати коментар</button>
+        </form>
+
+        <hr>
+
+        <ul class="list-group list-group-flush">
+          {% for comment in comments %}
+          <li class="list-group-item px-0">
+            <div class="small text-muted">
+                <strong>{{ comment.author.username }}</strong> — {{ comment.created_at|date:"d.m.Y H:i" }}
+            </div>
+            
+            {% if comment.text %}
+              <div class="mt-1">{{ comment.text|linebreaks }}</div>
+            {% endif %}
+
+            {% if comment.image %}
+              <div class="mt-2">
+                <a href="{{ comment.image.url }}" target="_blank">
+                  <img src="{{ comment.image.url }}" alt="Comment image" class="img-fluid rounded" style="max-height: 200px;">
+                </a>
+              </div>
+            {% endif %}
+          </li>
+          {% empty %}
+          <li class="list-group-item px-0">Коментарів немає</li>
+          {% endfor %}
+        </ul>
+    </div>
+</div>
+
+<a href="{% url 'task_list' %}" class="btn btn-secondary">← Назад до списку</a>
+{% endblock %}

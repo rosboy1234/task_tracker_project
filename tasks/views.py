@@ -4,10 +4,11 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView, D
 from django.views.generic.edit import FormMixin
 from django.urls import reverse_lazy, reverse
 from django.contrib.auth import login
-from .models import Task, Comment
-from .forms import TaskForm, CommentForm, SignUpForm
+from .models import Task, Comment, SubTask
+from .forms import TaskForm, CommentForm, SignUpForm, SubTaskForm
 from django.db.models import Q
 from datetime import date
+from django.contrib.auth.decorators import login_required
 
 class TaskListView(LoginRequiredMixin, ListView):
     model = Task
@@ -61,6 +62,8 @@ class TaskDetailView(LoginRequiredMixin, FormMixin, DetailView):
         context = super().get_context_data(**kwargs)
         if 'comment_form' not in context:
             context['comment_form'] = self.get_form()
+        
+        context['subtask_form'] = SubTaskForm()
         context['comments'] = self.object.comments.all().order_by('-created_at')
         return context
 
@@ -79,6 +82,26 @@ class TaskDetailView(LoginRequiredMixin, FormMixin, DetailView):
         comment.author = self.request.user
         comment.save()
         return super().form_valid(form)
+
+
+@login_required
+def add_subtask(request, pk):
+    task = get_object_or_404(Task, pk=pk, user=request.user)
+    if request.method == 'POST':
+        form = SubTaskForm(request.POST)
+        if form.is_valid():
+            subtask = form.save(commit=False)
+            subtask.task = task
+            subtask.save()
+    return redirect('task_detail', pk=pk)
+
+@login_required
+def toggle_subtask(request, pk, subtask_id):
+    task = get_object_or_404(Task, pk=pk, user=request.user)
+    subtask = get_object_or_404(SubTask, pk=subtask_id, task=task)
+    subtask.is_completed = not subtask.is_completed
+    subtask.save()
+    return redirect('task_detail', pk=pk)
 
 
 class TaskCreateView(LoginRequiredMixin, CreateView):

@@ -1,5 +1,5 @@
 from django import forms
-from .models import Task, Comment
+from .models import Task, Comment, SubTask
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
@@ -14,6 +14,17 @@ class TaskForm(forms.ModelForm):
             'priority': forms.Select(attrs={'class': 'form-select'}),
             'due_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'image': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+        }
+
+class SubTaskForm(forms.ModelForm):
+    class Meta:
+        model = SubTask
+        fields = ['title']
+        widgets = {
+            'title': forms.TextInput(attrs={
+                'class': 'form-control form-control-sm', 
+                'placeholder': 'Додати новий етап...'
+            }),
         }
 
 class CommentForm(forms.ModelForm):
@@ -39,7 +50,7 @@ class CommentForm(forms.ModelForm):
         image = cleaned_data.get('image')
 
         if not text and not image:
-            raise forms.ValidationError("Коментар не може бути порожнім. Додайте текст або зображення.")
+            raise forms.ValidationError("Коментар не може бути порожнім.")
 
         return cleaned_data
 

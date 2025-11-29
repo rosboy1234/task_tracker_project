@@ -3,7 +3,6 @@ from django.contrib.auth.models import User
 from django.utils.translation import gettext_lazy as _
 
 class Task(models.Model):
-    
     class Status(models.TextChoices):
         TODO = 'TODO', _('До виконання')
         IN_PROGRESS = 'IN_PROG', _('В процесі')
@@ -51,6 +50,23 @@ class Task(models.Model):
         ordering = ['due_date', '-priority']
         verbose_name = _("Завдання")
         verbose_name_plural = _("Завдання")
+
+    def __str__(self):
+        return self.title
+
+    def get_progress(self):
+        total = self.subtasks.count()
+        if total == 0:
+            return 0
+        done = self.subtasks.filter(is_completed=True).count()
+        return int((done / total) * 100)
+
+
+class SubTask(models.Model):
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='subtasks')
+    title = models.CharField(max_length=200, verbose_name="Підзавдання")
+    is_completed = models.BooleanField(default=False, verbose_name="Виконано")
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.title
